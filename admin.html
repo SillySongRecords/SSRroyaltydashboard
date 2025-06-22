@@ -77,18 +77,12 @@
     .success {
       color: green;
     }
-    #payoutRequestsList {
-      margin-top: 2rem;
-    }
-    #requestsAdminList {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      border-top: 1px solid #e2e8f0;
-    }
-    #requestsAdminList li {
-      padding: 0.5em 0;
-      border-bottom: 1px solid #e2e8f0;
+    a.back-link {
+      display: inline-block;
+      margin-top: 1em;
+      color: #0a64c8;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 
@@ -107,15 +101,11 @@
 
   <div id="auth">
     <button id="loginBtn">Sign in with Google (Admin Only)</button>
+    <p><a href="index.html" class="back-link">&larr; Back to User Login</a></p>
   </div>
 
   <div id="adminPanel" style="display:none;">
-    <p>
-      <strong>Signed in as:</strong> <span id="adminEmail"></span> 
-      <button id="logoutBtn">Sign Out</button>
-      <button id="backToUserBtn" style="margin-left:20px;">Return to User Login</button>
-    </p>
-
+    <p><strong>Signed in as:</strong> <span id="adminEmail"></span> <button id="logoutBtn">Sign Out</button></p>
     <h2>User Balances</h2>
     <table id="userTable">
       <thead>
@@ -129,13 +119,6 @@
       <tbody id="userList"></tbody>
     </table>
     <p class="status" id="statusMsg"></p>
-
-    <div id="payoutRequestsList">
-      <h2>Payout Requests</h2>
-      <ul id="requestsAdminList">
-        <li>Loading payout requests...</li>
-      </ul>
-    </div>
   </div>
 </main>
 
@@ -154,17 +137,15 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"]; // Add admin emails here
+  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"]; // Add your admin emails
 
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
-  const backToUserBtn = document.getElementById("backToUserBtn");
   const adminPanel = document.getElementById("adminPanel");
   const authDiv = document.getElementById("auth");
   const adminEmail = document.getElementById("adminEmail");
   const userList = document.getElementById("userList");
   const statusMsg = document.getElementById("statusMsg");
-  const requestsAdminList = document.getElementById("requestsAdminList");
 
   loginBtn.onclick = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -175,24 +156,15 @@
     auth.signOut();
   };
 
-  backToUserBtn.onclick = () => {
-    window.location.href = "index.html"; // Adjust if user login page has different filename
-  };
-
   auth.onAuthStateChanged(async user => {
     if (user && adminEmails.includes(user.email)) {
       authDiv.style.display = "none";
       adminPanel.style.display = "block";
       adminEmail.textContent = user.email;
       loadUsers();
-      listenPayoutRequests();
-      statusMsg.textContent = "";
     } else {
       authDiv.style.display = "block";
       adminPanel.style.display = "none";
-      adminEmail.textContent = "";
-      userList.innerHTML = "";
-      requestsAdminList.innerHTML = "<li>Sign in to see payout requests.</li>";
     }
   });
 
@@ -239,7 +211,7 @@
 
         // Log the transaction
         const admin = auth.currentUser.email;
-        await db.collection("adminTransactions").add({
+        db.collection("adminTransactions").add({
           admin,
           user: email,
           amount,
@@ -255,47 +227,6 @@
       statusMsg.textContent = "Error: " + e;
       statusMsg.classList.add("error");
     }
-  }
-
-  function listenPayoutRequests() {
-    console.log("Listening for payout requests...");
-    db.collection("payoutRequests")
-      .orderBy("timestamp", "desc")
-      .onSnapshot(snapshot => {
-        console.log("Snapshot received with", snapshot.size, "docs");
-        requestsAdminList.innerHTML = "";
-        if (snapshot.empty) {
-          requestsAdminList.innerHTML = "<li>No payout requests.</li>";
-          console.log("No payout requests found.");
-          return;
-        }
-        snapshot.forEach(doc => {
-          const req = doc.data();
-          console.log("Request doc:", doc.id, req);
-          const amount = req.amount?.toFixed(2) || "0.00";
-          const status = req.status || "Pending";
-          const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "Unknown";
-          const email = req.email || "Unknown";
-
-          const li = document.createElement("li");
-          li.style.padding = "0.5em 0";
-          li.style.borderBottom = "1px solid #e2e8f0";
-          li.innerHTML = `
-            <strong>${email}</strong> requested <strong>$${amount}</strong><br />
-            Status: <span style="font-weight:bold; color:${
-              status === 'Pending' ? '#0a64c8' : 
-              status === 'Accepted' ? '#22c55e' : 
-              status === 'Rejected' ? '#ef4444' : '#facc15'
-            }">${status}</span><br />
-            On: ${date}
-          `;
-
-          requestsAdminList.appendChild(li);
-        });
-      }, error => {
-        console.error("Error listening payout requests:", error);
-        requestsAdminList.innerHTML = "<li>Error loading payout requests.</li>";
-      });
   }
 </script>
 
