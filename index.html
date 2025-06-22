@@ -74,6 +74,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s ease;
+      margin-bottom: 1em;
     }
     button:hover {
       background-color: #084ea4;
@@ -142,6 +143,19 @@
     #signOutBtn:hover {
       background-color: #b91c1c;
     }
+    /* New admin link styling */
+    #adminLink {
+      display: block;
+      margin-top: -0.5em;
+      font-size: 0.9rem;
+      color: #0a64c8;
+      cursor: pointer;
+      user-select: none;
+      text-decoration: underline;
+    }
+    #adminLink:hover {
+      color: #084ea4;
+    }
   </style>
 
   <!-- Firebase SDKs -->
@@ -160,6 +174,9 @@
 
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
+      <br />
+      <button id="adminLoginBtn" onclick="window.location.href='admin.html'">Admin Login</button>
+      <a id="adminLink" href="admin.html">Are you an admin? Click here.</a>
     </div>
 
     <div id="dashboard">
