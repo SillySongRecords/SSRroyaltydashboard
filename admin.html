@@ -129,7 +129,11 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const adminEmails = ["sillysongrecords@gmail.com"]; // Replace/add your admin email(s)
+  // Admin emails allowed to access panel
+  const adminEmails = [
+    "sillysongrecords@gmail.com",
+    "genewilbert97@gmail.com"
+  ];
 
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
