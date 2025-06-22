@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin – Silly Song Records</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4fb;
+      margin: 0;
+      padding: 0;
+      color: #1e293b;
+    }
+    main {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      color: #0a64c8;
+      font-size: 2.2rem;
+      margin: 0.2em 0;
+    }
+    header p {
+      color: #3b82f6;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #0a64c8;
+      color: white;
+      padding: 0.6em 1.2em;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #084ea4;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 0.75em;
+      text-align: left;
+    }
+    th {
+      background: #e8f1fd;
+      color: #0a64c8;
+    }
+    input[type=number] {
+      width: 100px;
+      padding: 0.4em;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      margin-right: 6px;
+    }
+    .status {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<main>
+  <header>
+    <h1>Silly Song Records</h1>
+    <p>Admin Dashboard</p>
+  </header>
+
+  <div id="auth">
+    <button id="loginBtn">Sign in with Google (Admin Only)</button>
+  </div>
+
+  <div id="adminPanel" style="display:none;">
+    <p><strong>Signed in as:</strong> <span id="adminEmail"></span> <button id="logoutBtn">Sign Out</button></p>
+    <h2>User Balances</h2>
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Balance ($)</th>
+          <th>Adjust</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
+    <p class="status" id="statusMsg"></p>
+  </div>
+</main>
+
+<script>
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
+    authDomain: "musicroyaltydashboard.firebaseapp.com",
+    projectId: "musicroyaltydashboard",
+    storageBucket: "musicroyaltydashboard.firebasestorage.app",
+    messagingSenderId: "11241137292",
+    appId: "1:11241137292:web:06a7d43d5b555f417087a9"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const adminEmails = ["sillysongrecords@gmail.com"]; // Replace/add your admin email(s)
+
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const adminPanel = document.getElementById("adminPanel");
+  const authDiv = document.getElementById("auth");
+  const adminEmail = document.getElementById("adminEmail");
+  const userList = document.getElementById("userList");
+  const statusMsg = document.getElementById("statusMsg");
+
+  loginBtn.onclick = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider);
+  };
+
+  logoutBtn.onclick = () => {
+    auth.signOut();
+  };
+
+  auth.onAuthStateChanged(async user => {
+    if (user && adminEmails.includes(user.email)) {
+      authDiv.style.display = "none";
+      adminPanel.style.display = "block";
+      adminEmail.textContent = user.email;
+      loadUsers();
+    } else {
+      authDiv.style.display = "block";
+      adminPanel.style.display = "none";
+    }
+  });
+
+  function loadUsers() {
+    db.collection("users").orderBy("email").onSnapshot(snapshot => {
+      userList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+
+        const emailCell = `<td>${data.email}</td>`;
+        const balanceCell = `<td>${(data.balance || 0).toFixed(2)}</td>`;
+        const inputCell = `<td><input type="number" id="input-${doc.id}" placeholder="e.g. 10 or -5" step="0.01" /></td>`;
+        const actionCell = `<td><button onclick="adjustBalance('${doc.id}', '${data.email}')">Apply</button></td>`;
+
+        row.innerHTML = emailCell + balanceCell + inputCell + actionCell;
+        userList.appendChild(row);
+      });
+    });
+  }
+
+  async function adjustBalance(uid, email) {
+    const input = document.getElementById("input-" + uid);
+    const amount = parseFloat(input.value);
+    statusMsg.textContent = "";
+    statusMsg.className = "status";
+
+    if (isNaN(amount)) {
+      statusMsg.textContent = "Invalid amount.";
+      statusMsg.classList.add("error");
+      return;
+    }
+
+    try {
+      await db.runTransaction(async tx => {
+        const userRef = db.collection("users").doc(uid);
+        const userDoc = await tx.get(userRef);
+        if (!userDoc.exists) throw "User not found.";
+        const current = userDoc.data().balance || 0;
+        const newBalance = current + amount;
+        if (newBalance < 0) throw "Cannot go below $0.";
+
+        tx.update(userRef, { balance: newBalance });
+
+        // Log the transaction
+        const admin = auth.currentUser.email;
+        db.collection("adminTransactions").add({
+          admin,
+          user: email,
+          amount,
+          newBalance,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+
+      statusMsg.textContent = "Balance updated.";
+      statusMsg.classList.add("success");
+      input.value = "";
+    } catch (e) {
+      statusMsg.textContent = "Error: " + e;
+      statusMsg.classList.add("error");
+    }
+  }
+</script>
+
+</body>
+</html>
