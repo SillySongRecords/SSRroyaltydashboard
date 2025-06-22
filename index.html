@@ -237,11 +237,20 @@
         balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
       });
 
+      // Listen and show user's payout requests
       db.collection("payoutRequests")
         .where("uid", "==", user.uid)
         .orderBy("timestamp", "desc")
         .onSnapshot(snapshot => {
           requestsList.innerHTML = "";
+
+          if (snapshot.empty) {
+            const noItem = document.createElement("li");
+            noItem.textContent = "No payout requests found.";
+            requestsList.appendChild(noItem);
+            return;
+          }
+
           snapshot.forEach(doc => {
             const req = doc.data();
             const amount = req.amount?.toFixed(2) || "0.00";
@@ -264,6 +273,9 @@
     } else {
       loginDiv.style.display = "block";
       dashboardDiv.style.display = "none";
+      userEmailSpan.textContent = "";
+      balanceSpan.textContent = "0.00";
+      requestsList.innerHTML = "";
     }
   });
 
