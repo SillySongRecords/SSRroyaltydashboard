@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Music Royalty Dashboard</title>
+  <title>Silly Song Records - Music Royalty Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     /* Reset & base */
@@ -18,16 +18,46 @@
     }
     main {
       max-width: 800px;
-      margin: 40px auto;
+      margin: 40px auto 80px;
       padding: 20px;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 8px 16px rgb(0 0 0 / 0.1);
+      position: relative;
     }
-    h1 {
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    header h1 {
       color: #0a64c8;
+      font-weight: 900;
+      margin: 0;
+      font-size: 2.5rem;
+      letter-spacing: 1.2px;
+      user-select: none;
+    }
+    header p {
+      margin: 0.3em 0 0;
+      color: #3b82f6;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    footer {
+      max-width: 800px;
+      margin: 0 auto 40px;
+      text-align: center;
+      color: #0a64c8;
+      font-weight: 600;
+      user-select: none;
+    }
+    footer a {
+      color: #0a64c8;
+      text-decoration: none;
       font-weight: 700;
-      margin-bottom: 0.25em;
+    }
+    footer a:hover {
+      text-decoration: underline;
     }
     h2 {
       color: #0a64c8;
@@ -120,8 +150,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+  <header>
+    <h1>Silly Song Records</h1>
+    <p>Contact: <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
+  </header>
+
   <main>
-    <h1>Music Royalty Dashboard</h1>
+    <h2>Music Royalty Dashboard</h2>
 
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
@@ -142,18 +177,21 @@
     </div>
   </main>
 
-<script>
-  // ===== Paste your Firebase config here =====
-  const firebaseConfig = {
-  apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
-  authDomain: "musicroyaltydashboard.firebaseapp.com",
-  projectId: "musicroyaltydashboard",
-  storageBucket: "musicroyaltydashboard.firebasestorage.app",
-  messagingSenderId: "11241137292",
-  appId: "1:11241137292:web:06a7d43d5b555f417087a9",
-  measurementId: "G-NX2X87YRLT" // optional for analytics, can keep or remove
-};
+  <footer>
+    <p>© Silly Song Records | <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
+  </footer>
 
+<script>
+  // ===== Your Firebase config here =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
+    authDomain: "musicroyaltydashboard.firebaseapp.com",
+    projectId: "musicroyaltydashboard",
+    storageBucket: "musicroyaltydashboard.firebasestorage.app",
+    messagingSenderId: "11241137292",
+    appId: "1:11241137292:web:06a7d43d5b555f417087a9",
+    measurementId: "G-NX2X87YRLT"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
