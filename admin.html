@@ -42,7 +42,6 @@
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
-      margin-bottom: 1rem;
     }
     button:hover {
       background-color: #084ea4;
@@ -78,6 +77,65 @@
     .success {
       color: green;
     }
+
+    /* Notifications */
+    #notificationsList {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1em;
+    }
+
+    #notificationsList li {
+      background: #f9fbff;
+      padding: 1em;
+      margin-bottom: 0.5em;
+      border-left: 5px solid #0a64c8;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #notificationsList li.read {
+      opacity: 0.6;
+      border-color: #94a3b8;
+    }
+
+    .notification-info {
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .notification-btn {
+      background-color: #0a64c8;
+      color: white;
+      border: none;
+      padding: 0.4em 0.8em;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .notification-btn:hover {
+      background-color: #084ea4;
+    }
+
+    #notificationHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2rem;
+    }
+
+    #notificationBadge {
+      background-color: red;
+      color: white;
+      font-size: 0.8em;
+      font-weight: bold;
+      border-radius: 999px;
+      padding: 0.25em 0.6em;
+      margin-left: 0.5em;
+    }
   </style>
 
   <!-- Firebase SDKs -->
@@ -88,9 +146,6 @@
 <body>
 
 <main>
-  <!-- Added button to return to user login -->
-  <button onclick="window.location.href='index.html'">Back to User Dashboard Login</button>
-
   <header>
     <h1>Silly Song Records</h1>
     <p>Admin Dashboard</p>
@@ -98,10 +153,13 @@
 
   <div id="auth">
     <button id="loginBtn">Sign in with Google (Admin Only)</button>
+    <br /><br />
+    <a href="index.html"><button>Return to User Login</button></a>
   </div>
 
   <div id="adminPanel" style="display:none;">
     <p><strong>Signed in as:</strong> <span id="adminEmail"></span> <button id="logoutBtn">Sign Out</button></p>
+
     <h2>User Balances</h2>
     <table id="userTable">
       <thead>
@@ -115,11 +173,17 @@
       <tbody id="userList"></tbody>
     </table>
     <p class="status" id="statusMsg"></p>
+
+    <div id="notificationHeader">
+      <h2>Admin Notifications <span id="notificationBadge" style="display:none;"></span></h2>
+      <button id="toggleReadFilterBtn">Show Unread Only</button>
+    </div>
+    <ul id="notificationsList"></ul>
   </div>
 </main>
 
 <script>
-  // Your Firebase config
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
     authDomain: "musicroyaltydashboard.firebaseapp.com",
@@ -133,7 +197,7 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"]; // Admin emails
+  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"];
 
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -142,6 +206,11 @@
   const adminEmail = document.getElementById("adminEmail");
   const userList = document.getElementById("userList");
   const statusMsg = document.getElementById("statusMsg");
+
+  const notificationsList = document.getElementById("notificationsList");
+  const toggleReadFilterBtn = document.getElementById("toggleReadFilterBtn");
+  const notificationBadge = document.getElementById("notificationBadge");
+  let showUnreadOnly = false;
 
   loginBtn.onclick = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -152,12 +221,13 @@
     auth.signOut();
   };
 
-  auth.onAuthStateChanged(async user => {
+  auth.onAuthStateChanged(user => {
     if (user && adminEmails.includes(user.email)) {
       authDiv.style.display = "none";
       adminPanel.style.display = "block";
       adminEmail.textContent = user.email;
       loadUsers();
+      listenForNotifications();
     } else {
       authDiv.style.display = "block";
       adminPanel.style.display = "none";
@@ -224,6 +294,61 @@
       statusMsg.classList.add("error");
     }
   }
+
+  function listenForNotifications() {
+    db.collection("notifications")
+      .orderBy("timestamp", "desc")
+      .onSnapshot(snapshot => {
+        notificationsList.innerHTML = "";
+        let unreadCount = 0;
+
+        snapshot.forEach(doc => {
+          const note = doc.data();
+          const id = doc.id;
+
+          if (showUnreadOnly && note.seen) return;
+
+          const date = note.timestamp ? new Date(note.timestamp.seconds * 1000).toLocaleString() : "";
+          const li = document.createElement("li");
+          li.className = note.seen ? "read" : "";
+
+          if (!note.seen) unreadCount++;
+
+          li.innerHTML = `
+            <div class="notification-info">
+              <strong>${date}</strong><br>
+              ${note.message}
+            </div>
+            ${!note.seen ? `<button class="notification-btn" onclick="markAsRead('${id}')">Mark as read</button>` : ""}
+          `;
+
+          notificationsList.appendChild(li);
+        });
+
+        if (unreadCount > 0) {
+          notificationBadge.style.display = "inline-block";
+          notificationBadge.textContent = unreadCount;
+        } else {
+          notificationBadge.style.display = "none";
+        }
+      });
+  }
+
+  async function markAsRead(notificationId) {
+    try {
+      await db.collection("notifications").doc(notificationId).update({
+        seen: true
+      });
+    } catch (error) {
+      alert("Failed to mark notification as read: " + error.message);
+    }
+  }
+
+  toggleReadFilterBtn.onclick = () => {
+    showUnreadOnly = !showUnreadOnly;
+    toggleReadFilterBtn.textContent = showUnreadOnly ? "Show All" : "Show Unread Only";
+    listenForNotifications();
+  };
 </script>
 
 </body>
