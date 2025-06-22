@@ -42,6 +42,7 @@
       border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
+      margin-bottom: 1rem;
     }
     button:hover {
       background-color: #084ea4;
@@ -87,6 +88,9 @@
 <body>
 
 <main>
+  <!-- Added button to return to user login -->
+  <button onclick="window.location.href='index.html'">Back to User Dashboard Login</button>
+
   <header>
     <h1>Silly Song Records</h1>
     <p>Admin Dashboard</p>
@@ -129,11 +133,7 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // Admin emails allowed to access panel
-  const adminEmails = [
-    "sillysongrecords@gmail.com",
-    "genewilbert97@gmail.com"
-  ];
+  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"]; // Admin emails
 
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
