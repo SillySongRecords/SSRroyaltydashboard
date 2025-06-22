@@ -117,8 +117,6 @@
       justify-content: space-between;
       font-weight: 500;
       color: #334155;
-      gap: 1em;
-      flex-wrap: wrap;
     }
     ul#requestsList li:nth-child(odd) {
       background: #f9fbff;
@@ -130,8 +128,6 @@
       font-size: 0.85rem;
       text-transform: uppercase;
       color: white;
-      min-width: 80px;
-      text-align: center;
     }
     .status.Pending {
       background-color: #0a64c8;
@@ -140,8 +136,7 @@
       background-color: #22c55e;
     }
     .status.Processing {
-      background-color: #facc15; /* yellow */
-      color: #333;
+      background-color: #f59e0b;
     }
     .status.Rejected {
       background-color: #ef4444;
@@ -152,24 +147,6 @@
     }
     #signOutBtn:hover {
       background-color: #b91c1c;
-    }
-    /* Admin login button on user dashboard */
-    #adminLoginLink {
-      margin-top: 1.5rem;
-      text-align: center;
-    }
-    #adminLoginBtn {
-      background: none;
-      border: none;
-      color: #0a64c8;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: underline;
-      font-size: 1rem;
-      padding: 0;
-    }
-    #adminLoginBtn:hover {
-      color: #084ea4;
     }
   </style>
 
@@ -189,9 +166,6 @@
 
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
-      <div id="adminLoginLink">
-        <button id="adminLoginBtn">Admin Login</button>
-      </div>
     </div>
 
     <div id="dashboard" style="display:none;">
@@ -214,7 +188,6 @@
   </footer>
 
 <script>
-  // ===== Your Firebase config here =====
   const firebaseConfig = {
     apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
     authDomain: "musicroyaltydashboard.firebaseapp.com",
@@ -238,10 +211,6 @@
   const payoutAmountInput = document.getElementById("payoutAmount");
   const requestPayoutBtn = document.getElementById("requestPayoutBtn");
   const requestsList = document.getElementById("requestsList");
-  const adminLoginBtn = document.getElementById("adminLoginBtn");
-
-  loginDiv.style.display = "block";
-  dashboardDiv.style.display = "none";
 
   loginBtn.addEventListener("click", () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -253,10 +222,6 @@
 
   signOutBtn.addEventListener("click", () => {
     auth.signOut();
-  });
-
-  adminLoginBtn.addEventListener("click", () => {
-    window.location.href = "admin.html";
   });
 
   auth.onAuthStateChanged(async user => {
@@ -272,18 +237,23 @@
         await userRef.set({ email: user.email, balance: 0 });
       }
 
-      // Listen to balance changes realtime
       userRef.onSnapshot(doc => {
         const data = doc.data();
         balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
       });
 
-      // Listen to user's payout requests realtime
+      // Load user's past payout requests with statuses & dates
       db.collection("payoutRequests")
         .where("uid", "==", user.uid)
         .orderBy("timestamp", "desc")
         .onSnapshot(snapshot => {
           requestsList.innerHTML = "";
+          if (snapshot.empty) {
+            const li = document.createElement("li");
+            li.textContent = "No payout requests found.";
+            requestsList.appendChild(li);
+            return;
+          }
           snapshot.forEach(doc => {
             const req = doc.data();
             const amount = req.amount.toFixed(2);
@@ -301,7 +271,6 @@
             requestsList.appendChild(li);
           });
         });
-
     } else {
       loginDiv.style.display = "block";
       dashboardDiv.style.display = "none";
