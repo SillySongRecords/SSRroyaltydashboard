@@ -77,64 +77,18 @@
     .success {
       color: green;
     }
-
-    /* Notifications */
-    #notificationsList {
-      list-style: none;
-      padding-left: 0;
-      margin-top: 1em;
-    }
-
-    #notificationsList li {
-      background: #f9fbff;
-      padding: 1em;
-      margin-bottom: 0.5em;
-      border-left: 5px solid #0a64c8;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #notificationsList li.read {
-      opacity: 0.6;
-      border-color: #94a3b8;
-    }
-
-    .notification-info {
-      flex: 1;
-      margin-right: 10px;
-    }
-
-    .notification-btn {
-      background-color: #0a64c8;
-      color: white;
-      border: none;
-      padding: 0.4em 0.8em;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9em;
-    }
-
-    .notification-btn:hover {
-      background-color: #084ea4;
-    }
-
-    #notificationHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    #payoutRequestsList {
       margin-top: 2rem;
     }
-
-    #notificationBadge {
-      background-color: red;
-      color: white;
-      font-size: 0.8em;
-      font-weight: bold;
-      border-radius: 999px;
-      padding: 0.25em 0.6em;
-      margin-left: 0.5em;
+    #requestsAdminList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border-top: 1px solid #e2e8f0;
+    }
+    #requestsAdminList li {
+      padding: 0.5em 0;
+      border-bottom: 1px solid #e2e8f0;
     }
   </style>
 
@@ -153,12 +107,14 @@
 
   <div id="auth">
     <button id="loginBtn">Sign in with Google (Admin Only)</button>
-    <br /><br />
-    <a href="index.html"><button>Return to User Login</button></a>
   </div>
 
   <div id="adminPanel" style="display:none;">
-    <p><strong>Signed in as:</strong> <span id="adminEmail"></span> <button id="logoutBtn">Sign Out</button></p>
+    <p>
+      <strong>Signed in as:</strong> <span id="adminEmail"></span> 
+      <button id="logoutBtn">Sign Out</button>
+      <button id="backToUserBtn" style="margin-left:20px;">Return to User Login</button>
+    </p>
 
     <h2>User Balances</h2>
     <table id="userTable">
@@ -174,16 +130,17 @@
     </table>
     <p class="status" id="statusMsg"></p>
 
-    <div id="notificationHeader">
-      <h2>Admin Notifications <span id="notificationBadge" style="display:none;"></span></h2>
-      <button id="toggleReadFilterBtn">Show Unread Only</button>
+    <div id="payoutRequestsList">
+      <h2>Payout Requests</h2>
+      <ul id="requestsAdminList">
+        <li>Loading payout requests...</li>
+      </ul>
     </div>
-    <ul id="notificationsList"></ul>
   </div>
 </main>
 
 <script>
-  // Firebase config
+  // Your Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
     authDomain: "musicroyaltydashboard.firebaseapp.com",
@@ -197,20 +154,17 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"];
+  const adminEmails = ["sillysongrecords@gmail.com", "genewilbert97@gmail.com"]; // Add admin emails here
 
   const loginBtn = document.getElementById("loginBtn");
   const logoutBtn = document.getElementById("logoutBtn");
+  const backToUserBtn = document.getElementById("backToUserBtn");
   const adminPanel = document.getElementById("adminPanel");
   const authDiv = document.getElementById("auth");
   const adminEmail = document.getElementById("adminEmail");
   const userList = document.getElementById("userList");
   const statusMsg = document.getElementById("statusMsg");
-
-  const notificationsList = document.getElementById("notificationsList");
-  const toggleReadFilterBtn = document.getElementById("toggleReadFilterBtn");
-  const notificationBadge = document.getElementById("notificationBadge");
-  let showUnreadOnly = false;
+  const requestsAdminList = document.getElementById("requestsAdminList");
 
   loginBtn.onclick = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -221,16 +175,24 @@
     auth.signOut();
   };
 
-  auth.onAuthStateChanged(user => {
+  backToUserBtn.onclick = () => {
+    window.location.href = "index.html"; // Adjust if user login page has different filename
+  };
+
+  auth.onAuthStateChanged(async user => {
     if (user && adminEmails.includes(user.email)) {
       authDiv.style.display = "none";
       adminPanel.style.display = "block";
       adminEmail.textContent = user.email;
       loadUsers();
-      listenForNotifications();
+      listenPayoutRequests();
+      statusMsg.textContent = "";
     } else {
       authDiv.style.display = "block";
       adminPanel.style.display = "none";
+      adminEmail.textContent = "";
+      userList.innerHTML = "";
+      requestsAdminList.innerHTML = "<li>Sign in to see payout requests.</li>";
     }
   });
 
@@ -277,7 +239,7 @@
 
         // Log the transaction
         const admin = auth.currentUser.email;
-        db.collection("adminTransactions").add({
+        await db.collection("adminTransactions").add({
           admin,
           user: email,
           amount,
@@ -295,60 +257,42 @@
     }
   }
 
-  function listenForNotifications() {
-    db.collection("notifications")
+  function listenPayoutRequests() {
+    db.collection("payoutRequests")
       .orderBy("timestamp", "desc")
       .onSnapshot(snapshot => {
-        notificationsList.innerHTML = "";
-        let unreadCount = 0;
-
+        requestsAdminList.innerHTML = "";
+        if (snapshot.empty) {
+          requestsAdminList.innerHTML = "<li>No payout requests.</li>";
+          return;
+        }
         snapshot.forEach(doc => {
-          const note = doc.data();
-          const id = doc.id;
+          const req = doc.data();
+          const amount = req.amount?.toFixed(2) || "0.00";
+          const status = req.status || "Pending";
+          const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "Unknown";
+          const email = req.email || "Unknown";
 
-          if (showUnreadOnly && note.seen) return;
-
-          const date = note.timestamp ? new Date(note.timestamp.seconds * 1000).toLocaleString() : "";
           const li = document.createElement("li");
-          li.className = note.seen ? "read" : "";
-
-          if (!note.seen) unreadCount++;
-
+          li.style.padding = "0.5em 0";
+          li.style.borderBottom = "1px solid #e2e8f0";
           li.innerHTML = `
-            <div class="notification-info">
-              <strong>${date}</strong><br>
-              ${note.message}
-            </div>
-            ${!note.seen ? `<button class="notification-btn" onclick="markAsRead('${id}')">Mark as read</button>` : ""}
+            <strong>${email}</strong> requested <strong>$${amount}</strong><br />
+            Status: <span style="font-weight:bold; color:${
+              status === 'Pending' ? '#0a64c8' : 
+              status === 'Accepted' ? '#22c55e' : 
+              status === 'Rejected' ? '#ef4444' : '#facc15'
+            }">${status}</span><br />
+            On: ${date}
           `;
 
-          notificationsList.appendChild(li);
+          requestsAdminList.appendChild(li);
         });
-
-        if (unreadCount > 0) {
-          notificationBadge.style.display = "inline-block";
-          notificationBadge.textContent = unreadCount;
-        } else {
-          notificationBadge.style.display = "none";
-        }
+      }, error => {
+        console.error("Error listening payout requests:", error);
+        requestsAdminList.innerHTML = "<li>Error loading payout requests.</li>";
       });
   }
-
-  async function markAsRead(notificationId) {
-    try {
-      await db.collection("notifications").doc(notificationId).update({
-        seen: true
-      });
-    } catch (error) {
-      alert("Failed to mark notification as read: " + error.message);
-    }
-  }
-
-  toggleReadFilterBtn.onclick = () => {
-    showUnreadOnly = !showUnreadOnly;
-    toggleReadFilterBtn.textContent = showUnreadOnly ? "Show All" : "Show Unread Only";
-    listenForNotifications();
-  };
 </script>
 
 </body>
