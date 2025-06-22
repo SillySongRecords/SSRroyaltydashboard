@@ -258,16 +258,20 @@
   }
 
   function listenPayoutRequests() {
+    console.log("Listening for payout requests...");
     db.collection("payoutRequests")
       .orderBy("timestamp", "desc")
       .onSnapshot(snapshot => {
+        console.log("Snapshot received with", snapshot.size, "docs");
         requestsAdminList.innerHTML = "";
         if (snapshot.empty) {
           requestsAdminList.innerHTML = "<li>No payout requests.</li>";
+          console.log("No payout requests found.");
           return;
         }
         snapshot.forEach(doc => {
           const req = doc.data();
+          console.log("Request doc:", doc.id, req);
           const amount = req.amount?.toFixed(2) || "0.00";
           const status = req.status || "Pending";
           const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "Unknown";
