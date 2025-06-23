@@ -10,71 +10,42 @@
       background: #f0f4fb;
       margin: 0;
       padding: 0;
-      color: #222;
+      color: #1e293b;
     }
 
     main {
       max-width: 800px;
-      margin: 40px auto 80px;
+      margin: 40px auto;
       padding: 20px;
-      background: #fff;
+      background: white;
       border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-      position: relative;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     }
 
     header {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     header h1 {
       color: #0a64c8;
-      font-weight: 900;
-      margin: 0;
-      font-size: 2.5rem;
-      letter-spacing: 1.2px;
-      user-select: none;
+      font-size: 2.2rem;
+      margin: 0.2em 0;
     }
 
     header p {
-      margin: 0.3em 0 0;
       color: #3b82f6;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-
-    footer {
-      max-width: 800px;
-      margin: 0 auto 40px;
-      text-align: center;
-      color: #0a64c8;
-      font-weight: 600;
-    }
-
-    footer a {
-      color: #0a64c8;
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    h2 {
-      color: #0a64c8;
-      margin-top: 2rem;
-      font-weight: 600;
+      font-weight: 500;
+      font-size: 1rem;
     }
 
     button {
       background-color: #0a64c8;
       color: white;
-      border: none;
       padding: 0.6em 1.2em;
-      font-size: 1rem;
+      border: none;
       border-radius: 8px;
+      font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
@@ -84,8 +55,8 @@
     }
 
     input[type=number] {
-      width: 140px;
-      padding: 0.6em 1em;
+      width: 150px;
+      padding: 0.6em;
       font-size: 1rem;
       border: 1.5px solid #cbd5e1;
       border-radius: 8px;
@@ -93,56 +64,61 @@
       margin-bottom: 1em;
     }
 
-    input[type=number]:focus {
-      border-color: #0a64c8;
-      outline: none;
-    }
-
-    #login {
-      text-align: center;
-      padding: 3em 0;
-    }
-
-    #dashboard p {
-      font-size: 1.1rem;
-      margin: 0.5em 0;
-    }
-
-    #dashboard strong {
-      color: #0a64c8;
-    }
-
-    #signOutBtn {
-      margin-top: 2em;
-      background-color: #ef4444;
-    }
-
-    #signOutBtn:hover {
-      background-color: #b91c1c;
-    }
-
-    .balance-display {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #0a64c8;
-    }
-
-    .balance-display span {
-      font-size: 2rem;
-      color: #0a64c8;
-    }
-
-    #statusNotification {
-      background-color: #e8f1fd;
-      border-left: 5px solid #0a64c8;
-      padding: 1em;
-      margin: 1em 0;
-      border-radius: 8px;
+    #login, #dashboard {
       display: none;
     }
 
-    #emailSupportBtn {
-      margin-top: 1.5em;
+    .status {
+      font-weight: bold;
+      padding: 0.25em 0.6em;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: white;
+      text-transform: uppercase;
+    }
+
+    .status.Pending {
+      background-color: #0a64c8;
+    }
+
+    .status.Accepted {
+      background-color: #22c55e;
+    }
+
+    .status.Processing {
+      background-color: #f59e0b;
+    }
+
+    .status.Rejected {
+      background-color: #ef4444;
+    }
+
+    .notification {
+      background: #e0f2fe;
+      padding: 1em;
+      border-left: 5px solid #0a64c8;
+      margin: 1em 0;
+      border-radius: 8px;
+      color: #0a64c8;
+    }
+
+    #balance {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #0a64c8;
+    }
+
+    .balance-display {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #0a64c8;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #0a64c8;
+      font-weight: 600;
     }
   </style>
 
@@ -152,39 +128,36 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
   <header>
     <h1>Silly Song Records</h1>
     <p>Contact: <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
   </header>
 
   <main>
-    <h2>Music Royalty Dashboard</h2>
-
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
       <br><br>
-      <button onclick="window.location.href='admin.html'">Admin Login</button>
+      <a href="admin.html"><button>Admin Login</button></a>
     </div>
 
-    <div id="dashboard" style="display: none;">
+    <div id="dashboard">
       <p><strong>Logged in as:</strong> <span id="userEmail"></span></p>
-      <p><strong>Balance:</strong> <span class="balance-display"><span>$</span><span id="balance">0.00</span></span></p>
+      <p><strong>Balance:</strong> <span class="balance-display">$<span id="balance">0.00</span></span></p>
 
-      <div id="statusNotification"></div>
+      <div id="notificationDiv" class="notification" style="display:none;"></div>
 
       <h2>Request a Payout</h2>
       <input type="number" id="payoutAmount" placeholder="Enter amount" min="0.01" step="0.01" />
       <button id="requestPayoutBtn">Submit Request</button>
 
-      <button id="emailSupportBtn">Request Royalty Report</button>
-
       <br><br>
-      <button id="signOutBtn">Sign Out</button>
+      <button id="signOutBtn" style="background:#ef4444;">Sign Out</button>
     </div>
   </main>
 
   <footer>
-    <p>© Silly Song Records | <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
+    <p>© Silly Song Records</p>
   </footer>
 
   <script>
@@ -192,7 +165,7 @@
       apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
       authDomain: "musicroyaltydashboard.firebaseapp.com",
       projectId: "musicroyaltydashboard",
-      storageBucket: "musicroyaltydashboard.firebasestorage.app",
+      storageBucket: "musicroyaltydashboard.appspot.com",
       messagingSenderId: "11241137292",
       appId: "1:11241137292:web:06a7d43d5b555f417087a9"
     };
@@ -209,19 +182,16 @@
     const balanceSpan = document.getElementById("balance");
     const payoutAmountInput = document.getElementById("payoutAmount");
     const requestPayoutBtn = document.getElementById("requestPayoutBtn");
-    const statusNotification = document.getElementById("statusNotification");
-    const emailSupportBtn = document.getElementById("emailSupportBtn");
+    const notificationDiv = document.getElementById("notificationDiv");
 
-    loginBtn.addEventListener("click", () => {
+    let latestRequestStatus = null;
+
+    loginBtn.onclick = () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(error => {
-        alert("Sign in failed: " + error.message);
-      });
-    });
+      auth.signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
+    };
 
-    signOutBtn.addEventListener("click", () => {
-      auth.signOut();
-    });
+    signOutBtn.onclick = () => auth.signOut();
 
     auth.onAuthStateChanged(async user => {
       if (user) {
@@ -231,7 +201,6 @@
 
         const userRef = db.collection("users").doc(user.uid);
         const userDoc = await userRef.get();
-
         if (!userDoc.exists) {
           await userRef.set({ email: user.email, balance: 0 });
         }
@@ -241,61 +210,62 @@
           balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
         });
 
-        // Check for existing pending request
         db.collection("payoutRequests")
           .where("uid", "==", user.uid)
-          .where("status", "==", "Pending")
+          .orderBy("timestamp", "desc")
           .limit(1)
-          .get()
-          .then(snapshot => {
-            if (!snapshot.empty) {
-              const req = snapshot.docs[0].data();
-              statusNotification.style.display = "block";
-              statusNotification.innerHTML = `
-                <strong>Your withdrawal request is pending and in review.</strong><br>
-                Amount: $${req.amount.toFixed(2)}<br>
-                Status: ${req.status}
-              `;
-              payoutAmountInput.disabled = true;
-              requestPayoutBtn.disabled = true;
+          .onSnapshot(snapshot => {
+            if (snapshot.empty) {
+              notificationDiv.style.display = "none";
+              requestPayoutBtn.disabled = false;
+              payoutAmountInput.disabled = false;
+              latestRequestStatus = null;
+              return;
             }
+
+            const req = snapshot.docs[0].data();
+            const amount = req.amount.toFixed(2);
+            const status = req.status || "Pending";
+            const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "";
+
+            latestRequestStatus = status;
+
+            let statusText = "in review";
+            if (status === "Processing") statusText = "currently being processed";
+            if (status === "Accepted") statusText = "approved and will be sent soon";
+            if (status === "Rejected") statusText = "rejected. You may now submit a new request";
+
+            notificationDiv.innerHTML = `
+              <p>Your withdrawal request of <strong>$${amount}</strong> is <strong>${statusText}</strong>.</p>
+              <p><strong>Status:</strong> <span class="status ${status}">${status}</span></p>
+              <p><strong>Date:</strong> ${date}</p>
+            `;
+            notificationDiv.style.display = "block";
+
+            const disable = status === "Pending" || status === "Processing";
+            requestPayoutBtn.disabled = disable;
+            payoutAmountInput.disabled = disable;
           });
-
-        // Setup email button
-        const today = new Date().toLocaleDateString('en-US');
-        emailSupportBtn.onclick = () => {
-          const subject = encodeURIComponent(`Royalty Report Request – ${today}`);
-          const body = encodeURIComponent(`Hello Silly Song Records,%0D%0A%0D%0AI would like to request a royalty report for my account.%0D%0A%0D%0AMy email is: ${user.email}%0D%0A%0D%0AThank you!`);
-          window.location.href = `mailto:support@sillysongrecords.com?subject=${subject}&body=${body}`;
-        };
-
       } else {
         loginDiv.style.display = "block";
         dashboardDiv.style.display = "none";
-        userEmailSpan.textContent = "";
-        balanceSpan.textContent = "0.00";
       }
     });
 
-    requestPayoutBtn.addEventListener("click", async () => {
+    requestPayoutBtn.onclick = async () => {
       const amount = parseFloat(payoutAmountInput.value);
-      if (!amount || amount <= 0) {
-        alert("Please enter a valid amount.");
-        return;
-      }
+      if (!amount || amount <= 0) return alert("Enter a valid amount.");
 
       const user = auth.currentUser;
-      if (!user) {
-        alert("You must be signed in.");
-        return;
-      }
+      if (!user) return alert("Not signed in.");
 
-      const userDoc = await db.collection("users").doc(user.uid).get();
-      const currentBalance = userDoc.data().balance || 0;
+      const userRef = db.collection("users").doc(user.uid);
+      const userDoc = await userRef.get();
+      const balance = userDoc.data()?.balance || 0;
 
-      if (amount > currentBalance) {
-        alert("You cannot request more than your current balance.");
-        return;
+      if (amount > balance) return alert("You cannot request more than your current balance.");
+      if (latestRequestStatus === "Pending" || latestRequestStatus === "Processing") {
+        return alert("You already have a request in progress.");
       }
 
       try {
@@ -306,5 +276,12 @@
           status: "Pending",
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-        alert("Wit
+        alert("Request submitted successfully.");
+        payoutAmountInput.value = "";
+      } catch (e) {
+        alert("Error submitting request: " + e.message);
+      }
+    };
+  </script>
+</body>
+</html>
