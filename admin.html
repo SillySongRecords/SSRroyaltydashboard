@@ -37,12 +37,14 @@
     button {
       background-color: #0a64c8;
       color: white;
-      padding: 0.6em 1.2em;
+      padding: 0.3em 0.8em;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
       cursor: pointer;
       margin-right: 6px;
+      user-select: none;
+      transition: background-color 0.2s ease;
     }
     button:hover {
       background-color: #084ea4;
@@ -53,6 +55,11 @@
     .danger:hover {
       background-color: #b91c1c;
     }
+    #deleteSelectedBtn {
+      margin: 10px 0 0 0;
+      padding: 0.4em 1em;
+      font-weight: 600;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -60,8 +67,9 @@
     }
     th, td {
       border: 1px solid #e2e8f0;
-      padding: 0.75em;
+      padding: 0.6em 0.8em;
       text-align: left;
+      vertical-align: middle;
     }
     th {
       background: #e8f1fd;
@@ -73,6 +81,11 @@
       border: 1.5px solid #cbd5e1;
       border-radius: 6px;
       margin-right: 6px;
+    }
+    input[type=checkbox] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
     }
     .status {
       font-weight: bold;
@@ -139,6 +152,7 @@
     <table>
       <thead>
         <tr>
+          <th><input type="checkbox" id="selectAll" title="Select/Deselect All"></th>
           <th>User Email</th>
           <th>Amount ($)</th>
           <th>Status</th>
@@ -148,6 +162,7 @@
       </thead>
       <tbody id="requestList"></tbody>
     </table>
+    <button id="deleteSelectedBtn" class="danger" style="display:none;">Delete Selected</button>
 
     <p class="status" id="statusMsg"></p>
   </div>
@@ -177,6 +192,9 @@
   const requestList = document.getElementById("requestList");
   const statusMsg = document.getElementById("statusMsg");
 
+  const selectAllCheckbox = document.getElementById("selectAll");
+  const deleteSelectedBtn = document.getElementById("deleteSelectedBtn");
+
   loginBtn.onclick = () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider);
@@ -197,7 +215,6 @@
     }
   });
 
-  // Load users and display in user balances table
   function loadUsers() {
     db.collection("users").orderBy("email").onSnapshot(snapshot => {
       userList.innerHTML = "";
@@ -216,7 +233,6 @@
     });
   }
 
-  // Adjust user balance with transaction and log admin action
   async function adjustBalance(uid, email) {
     const input = document.getElementById("input-" + uid);
     const amount = parseFloat(input.value);
@@ -240,7 +256,6 @@
 
         tx.update(userRef, { balance: newBalance });
 
-        // Log the transaction
         const admin = auth.currentUser.email;
         db.collection("adminTransactions").add({
           admin,
@@ -260,7 +275,6 @@
     }
   }
 
-  // Load payout requests with approve, reject, and delete buttons
   function loadRequests() {
     db.collection("payoutRequests")
       .orderBy("timestamp", "desc")
@@ -273,6 +287,7 @@
           const tr = document.createElement("tr");
 
           tr.innerHTML = `
+            <td><input type="checkbox" class="selectCheckbox" data-id="${doc.id}"></td>
             <td>${data.email}</td>
             <td>${data.amount.toFixed(2)}</td>
             <td><span class="status ${status}">${status}</span></td>
@@ -285,10 +300,10 @@
           `;
           requestList.appendChild(tr);
         });
+        updateDeleteSelectedVisibility();
       });
   }
 
-  // Update payout request status and adjust balance if accepted
   function updateStatus(docId, status, amount, uid) {
     const docRef = db.collection("payoutRequests").doc(docId);
     docRef.update({ status });
@@ -308,12 +323,56 @@
     }
   }
 
-  // Delete payout request document
   function deleteRequest(docId) {
     if (confirm("Are you sure you want to delete this payout request?")) {
       db.collection("payoutRequests").doc(docId).delete();
     }
   }
+
+  // Select all checkbox behavior
+  selectAllCheckbox.addEventListener('change', () => {
+    const checkboxes = document.querySelectorAll('.selectCheckbox');
+    checkboxes.forEach(cb => {
+      cb.checked = selectAllCheckbox.checked;
+    });
+    updateDeleteSelectedVisibility();
+  });
+
+  // Listen for individual checkbox changes to update selectAll state & button visibility
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('selectCheckbox')) {
+      const allCheckboxes = document.querySelectorAll('.selectCheckbox');
+      const checkedCheckboxes = document.querySelectorAll('.selectCheckbox:checked');
+      selectAllCheckbox.checked = allCheckboxes.length === checkedCheckboxes.length;
+      updateDeleteSelectedVisibility();
+    }
+  });
+
+  // Show or hide the Delete Selected button
+  function updateDeleteSelectedVisibility() {
+    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
+    deleteSelectedBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+  }
+
+  // Bulk delete selected payout requests
+  deleteSelectedBtn.addEventListener('click', () => {
+    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
+    if (checkedBoxes.length === 0) return;
+
+    if (!confirm(`Delete ${checkedBoxes.length} selected payout request(s)?`)) return;
+
+    const batch = db.batch();
+    checkedBoxes.forEach(cb => {
+      const docId = cb.getAttribute('data-id');
+      const docRef = db.collection("payoutRequests").doc(docId);
+      batch.delete(docRef);
+    });
+    batch.commit().then(() => {
+      alert("Selected payout requests deleted.");
+    }).catch(err => {
+      alert("Error deleting requests: " + err);
+    });
+  });
 </script>
 
 </body>
