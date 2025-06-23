@@ -134,7 +134,6 @@
       <p><strong>Balance:</strong> $<span id="balance">0.00</span></p>
 
       <div id="notificationDiv" class="notification" style="display:none;"></div>
-      <div id="currentRequestStatus"></div>
 
       <h2>Request a Payout</h2>
       <input type="number" id="payoutAmount" placeholder="Enter amount" min="0.01" step="0.01" />
@@ -172,7 +171,8 @@
     const payoutAmountInput = document.getElementById("payoutAmount");
     const requestPayoutBtn = document.getElementById("requestPayoutBtn");
     const notificationDiv = document.getElementById("notificationDiv");
-    const currentRequestStatus = document.getElementById("currentRequestStatus");
+
+    let latestRequestStatus = null;
 
     loginBtn.onclick = () => {
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -198,6 +198,7 @@
           balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
         });
 
+        // Check most recent request
         db.collection("payoutRequests")
           .where("uid", "==", user.uid)
           .orderBy("timestamp", "desc")
@@ -205,9 +206,9 @@
           .onSnapshot(snapshot => {
             if (snapshot.empty) {
               notificationDiv.style.display = "none";
-              currentRequestStatus.innerHTML = "No current payout requests.";
               requestPayoutBtn.disabled = false;
               payoutAmountInput.disabled = false;
+              latestRequestStatus = null;
               return;
             }
 
@@ -216,26 +217,23 @@
             const status = req.status || "Pending";
             const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "";
 
-            const statusMsg = {
-              "Pending": "is currently pending and under review.",
-              "Processing": "is being processed.",
-              "Accepted": "has been accepted. Funds will be disbursed shortly.",
-              "Rejected": "was rejected. You may submit a new request."
-            };
+            latestRequestStatus = status;
 
-            const showStatus = `
-              <p><strong>Amount:</strong> $${amount}</p>
+            let statusText = "in review";
+            if (status === "Processing") statusText = "currently being processed";
+            if (status === "Accepted") statusText = "approved and will be sent soon";
+            if (status === "Rejected") statusText = "rejected. You may now submit a new request";
+
+            notificationDiv.innerHTML = `
+              <p>Your withdrawal request of <strong>$${amount}</strong> is <strong>${statusText}</strong>.</p>
               <p><strong>Status:</strong> <span class="status ${status}">${status}</span></p>
-              <p><strong>Requested at:</strong> ${date}</p>
+              <p><strong>Date:</strong> ${date}</p>
             `;
-
-            currentRequestStatus.innerHTML = showStatus;
-            notificationDiv.innerHTML = `Your withdrawal request of <strong>$${amount}</strong> ${statusMsg[status] || ''}`;
             notificationDiv.style.display = "block";
 
-            const disableRequest = (status === "Pending" || status === "Processing");
-            requestPayoutBtn.disabled = disableRequest;
-            payoutAmountInput.disabled = disableRequest;
+            const disable = status === "Pending" || status === "Processing";
+            requestPayoutBtn.disabled = disable;
+            payoutAmountInput.disabled = disable;
           });
       } else {
         loginDiv.style.display = "block";
@@ -245,17 +243,18 @@
 
     requestPayoutBtn.onclick = async () => {
       const amount = parseFloat(payoutAmountInput.value);
-      if (!amount || amount <= 0) return alert("Please enter a valid amount.");
+      if (!amount || amount <= 0) return alert("Enter a valid amount.");
 
       const user = auth.currentUser;
-      if (!user) return alert("You must be signed in.");
+      if (!user) return alert("Not signed in.");
 
       const userRef = db.collection("users").doc(user.uid);
       const userDoc = await userRef.get();
-      const currentBalance = userDoc.data()?.balance || 0;
+      const balance = userDoc.data()?.balance || 0;
 
-      if (amount > currentBalance) {
-        return alert("You cannot request more than your available balance.");
+      if (amount > balance) return alert("You cannot request more than your current balance.");
+      if (latestRequestStatus === "Pending" || latestRequestStatus === "Processing") {
+        return alert("You already have a request in progress.");
       }
 
       try {
@@ -266,8 +265,7 @@
           status: "Pending",
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-
-        alert("Withdrawal request submitted!");
+        alert("Request submitted successfully.");
         payoutAmountInput.value = "";
       } catch (e) {
         alert("Error submitting request: " + e.message);
