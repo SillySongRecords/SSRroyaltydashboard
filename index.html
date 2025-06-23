@@ -5,151 +5,108 @@
   <title>Silly Song Records - Music Royalty Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* Reset & base */
-    * {
-      box-sizing: border-box;
-    }
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: #f0f4fb;
       margin: 0;
       padding: 0;
-      color: #222;
+      color: #1e293b;
     }
+
     main {
       max-width: 800px;
-      margin: 40px auto 80px;
+      margin: 40px auto;
       padding: 20px;
-      background: #fff;
+      background: white;
       border-radius: 12px;
-      box-shadow: 0 8px 16px rgb(0 0 0 / 0.1);
-      position: relative;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
     }
+
     header {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
+
     header h1 {
       color: #0a64c8;
-      font-weight: 900;
-      margin: 0;
-      font-size: 2.5rem;
-      letter-spacing: 1.2px;
-      user-select: none;
+      font-size: 2.2rem;
+      margin: 0.2em 0;
     }
+
     header p {
-      margin: 0.3em 0 0;
       color: #3b82f6;
-      font-weight: 600;
-      font-size: 1.1rem;
+      font-weight: 500;
+      font-size: 1rem;
     }
-    footer {
-      max-width: 800px;
-      margin: 0 auto 40px;
-      text-align: center;
-      color: #0a64c8;
-      font-weight: 600;
-      user-select: none;
-    }
-    footer a {
-      color: #0a64c8;
-      text-decoration: none;
-      font-weight: 700;
-    }
-    footer a:hover {
-      text-decoration: underline;
-    }
-    h2 {
-      color: #0a64c8;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      font-weight: 600;
-    }
+
     button {
       background-color: #0a64c8;
       color: white;
+      padding: 0.75em 1.2em;
       border: none;
-      padding: 0.75em 1.25em;
-      font-size: 1rem;
       border-radius: 8px;
+      font-size: 1rem;
       cursor: pointer;
       transition: background-color 0.2s ease;
-      margin-top: 0.5em;
     }
+
     button:hover {
       background-color: #084ea4;
     }
+
     input[type=number] {
       width: 100%;
-      padding: 0.75em 1em;
+      padding: 0.75em;
       font-size: 1rem;
       border: 1.5px solid #cbd5e1;
       border-radius: 8px;
-      outline-offset: 2px;
       margin-top: 0.5em;
       margin-bottom: 1em;
-      transition: border-color 0.2s ease;
     }
-    input[type=number]:focus {
-      border-color: #0a64c8;
-      outline: none;
+
+    #login, #dashboard {
+      display: none;
     }
-    #login {
-      text-align: center;
-      padding: 3em 0;
-    }
-    #dashboard p {
-      font-size: 1.1rem;
-      margin: 0.5em 0;
-    }
-    #dashboard strong {
-      color: #0a64c8;
-    }
-    ul#requestsList {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      border-top: 1px solid #e2e8f0;
-    }
-    ul#requestsList li {
-      padding: 0.75em 1em;
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      justify-content: space-between;
-      font-weight: 500;
-      color: #334155;
-    }
-    ul#requestsList li:nth-child(odd) {
-      background: #f9fbff;
-    }
+
     .status {
-      font-weight: 600;
-      padding: 0.1em 0.6em;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      text-transform: uppercase;
+      font-weight: bold;
+      padding: 0.25em 0.6em;
+      border-radius: 6px;
+      font-size: 0.9rem;
       color: white;
-      min-width: 75px;
-      text-align: center;
+      text-transform: uppercase;
     }
+
     .status.Pending {
       background-color: #0a64c8;
     }
+
     .status.Accepted {
       background-color: #22c55e;
     }
+
     .status.Processing {
       background-color: #f59e0b;
     }
+
     .status.Rejected {
       background-color: #ef4444;
     }
-    #signOutBtn {
-      margin-top: 2em;
-      background-color: #ef4444;
+
+    .notification {
+      background: #e0f2fe;
+      padding: 1em;
+      border-left: 5px solid #0a64c8;
+      margin: 1em 0;
+      border-radius: 8px;
+      color: #0a64c8;
     }
-    #signOutBtn:hover {
-      background-color: #b91c1c;
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #0a64c8;
+      font-weight: 600;
     }
   </style>
 
@@ -159,158 +116,163 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
   <header>
     <h1>Silly Song Records</h1>
     <p>Contact: <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
   </header>
 
   <main>
-    <h2>Music Royalty Dashboard</h2>
-
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
-      <br />
-      <button id="adminLoginBtn" style="margin-top: 1em;">Admin Login</button>
+      <br><br>
+      <a href="admin.html"><button>Admin Login</button></a>
     </div>
 
-    <div id="dashboard" style="display:none;">
+    <div id="dashboard">
       <p><strong>Logged in as:</strong> <span id="userEmail"></span></p>
       <p><strong>Balance:</strong> $<span id="balance">0.00</span></p>
+
+      <div id="notificationDiv" class="notification" style="display:none;"></div>
+      <div id="currentRequestStatus"></div>
 
       <h2>Request a Payout</h2>
       <input type="number" id="payoutAmount" placeholder="Enter amount" min="0.01" step="0.01" />
       <button id="requestPayoutBtn">Submit Request</button>
 
-      <h2>Your Past Requests</h2>
-      <ul id="requestsList"></ul>
-
-      <button id="signOutBtn">Sign Out</button>
+      <br><br>
+      <button id="signOutBtn" style="background:#ef4444;">Sign Out</button>
     </div>
   </main>
 
   <footer>
-    <p>© Silly Song Records | <a href="mailto:sillysongrecords@gmail.com">sillysongrecords@gmail.com</a></p>
+    <p>© Silly Song Records</p>
   </footer>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
-    authDomain: "musicroyaltydashboard.firebaseapp.com",
-    projectId: "musicroyaltydashboard",
-    storageBucket: "musicroyaltydashboard.firebasestorage.app",
-    messagingSenderId: "11241137292",
-    appId: "1:11241137292:web:06a7d43d5b555f417087a9",
-    measurementId: "G-NX2X87YRLT"
-  };
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
+      authDomain: "musicroyaltydashboard.firebaseapp.com",
+      projectId: "musicroyaltydashboard",
+      storageBucket: "musicroyaltydashboard.appspot.com",
+      messagingSenderId: "11241137292",
+      appId: "1:11241137292:web:06a7d43d5b555f417087a9"
+    };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  const loginDiv = document.getElementById("login");
-  const dashboardDiv = document.getElementById("dashboard");
-  const loginBtn = document.getElementById("loginBtn");
-  const adminLoginBtn = document.getElementById("adminLoginBtn");
-  const signOutBtn = document.getElementById("signOutBtn");
-  const userEmailSpan = document.getElementById("userEmail");
-  const balanceSpan = document.getElementById("balance");
-  const payoutAmountInput = document.getElementById("payoutAmount");
-  const requestPayoutBtn = document.getElementById("requestPayoutBtn");
-  const requestsList = document.getElementById("requestsList");
+    const loginDiv = document.getElementById("login");
+    const dashboardDiv = document.getElementById("dashboard");
+    const loginBtn = document.getElementById("loginBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const userEmailSpan = document.getElementById("userEmail");
+    const balanceSpan = document.getElementById("balance");
+    const payoutAmountInput = document.getElementById("payoutAmount");
+    const requestPayoutBtn = document.getElementById("requestPayoutBtn");
+    const notificationDiv = document.getElementById("notificationDiv");
+    const currentRequestStatus = document.getElementById("currentRequestStatus");
 
-  loginBtn.addEventListener("click", () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(error => {
-      alert("Sign in failed: " + error.message);
-      console.error("Sign in error:", error);
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
+    };
+
+    signOutBtn.onclick = () => auth.signOut();
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        loginDiv.style.display = "none";
+        dashboardDiv.style.display = "block";
+        userEmailSpan.textContent = user.email;
+
+        const userRef = db.collection("users").doc(user.uid);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
+          await userRef.set({ email: user.email, balance: 0 });
+        }
+
+        userRef.onSnapshot(doc => {
+          const data = doc.data();
+          balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
+        });
+
+        db.collection("payoutRequests")
+          .where("uid", "==", user.uid)
+          .orderBy("timestamp", "desc")
+          .limit(1)
+          .onSnapshot(snapshot => {
+            if (snapshot.empty) {
+              notificationDiv.style.display = "none";
+              currentRequestStatus.innerHTML = "No current payout requests.";
+              requestPayoutBtn.disabled = false;
+              payoutAmountInput.disabled = false;
+              return;
+            }
+
+            const req = snapshot.docs[0].data();
+            const amount = req.amount.toFixed(2);
+            const status = req.status || "Pending";
+            const date = req.timestamp ? new Date(req.timestamp.seconds * 1000).toLocaleString() : "";
+
+            const statusMsg = {
+              "Pending": "is currently pending and under review.",
+              "Processing": "is being processed.",
+              "Accepted": "has been accepted. Funds will be disbursed shortly.",
+              "Rejected": "was rejected. You may submit a new request."
+            };
+
+            const showStatus = `
+              <p><strong>Amount:</strong> $${amount}</p>
+              <p><strong>Status:</strong> <span class="status ${status}">${status}</span></p>
+              <p><strong>Requested at:</strong> ${date}</p>
+            `;
+
+            currentRequestStatus.innerHTML = showStatus;
+            notificationDiv.innerHTML = `Your withdrawal request of <strong>$${amount}</strong> ${statusMsg[status] || ''}`;
+            notificationDiv.style.display = "block";
+
+            const disableRequest = (status === "Pending" || status === "Processing");
+            requestPayoutBtn.disabled = disableRequest;
+            payoutAmountInput.disabled = disableRequest;
+          });
+      } else {
+        loginDiv.style.display = "block";
+        dashboardDiv.style.display = "none";
+      }
     });
-  });
 
-  adminLoginBtn.addEventListener("click", () => {
-    window.location.href = "admin.html";
-  });
+    requestPayoutBtn.onclick = async () => {
+      const amount = parseFloat(payoutAmountInput.value);
+      if (!amount || amount <= 0) return alert("Please enter a valid amount.");
 
-  signOutBtn.addEventListener("click", () => {
-    auth.signOut();
-  });
-
-  auth.onAuthStateChanged(async user => {
-    if (user) {
-      loginDiv.style.display = "none";
-      dashboardDiv.style.display = "block";
-      userEmailSpan.textContent = user.email;
+      const user = auth.currentUser;
+      if (!user) return alert("You must be signed in.");
 
       const userRef = db.collection("users").doc(user.uid);
       const userDoc = await userRef.get();
+      const currentBalance = userDoc.data()?.balance || 0;
 
-      if (!userDoc.exists) {
-        await userRef.set({ email: user.email, balance: 0 });
+      if (amount > currentBalance) {
+        return alert("You cannot request more than your available balance.");
       }
 
-      userRef.onSnapshot(doc => {
-        const data = doc.data();
-        balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
-      });
-
-      db.collection("payoutRequests")
-        .where("uid", "==", user.uid)
-        .orderBy("timestamp", "desc")
-        .onSnapshot(snapshot => {
-          requestsList.innerHTML = "";
-          snapshot.forEach(doc => {
-            const req = doc.data();
-            const amount = req.amount.toFixed(2);
-            const status = req.status || "Pending";
-            const date = req.timestamp
-              ? new Date(req.timestamp.seconds * 1000).toLocaleString()
-              : "";
-            const li = document.createElement("li");
-
-            li.innerHTML = `
-              <span>$${amount}</span>
-              <span class="status ${status}">${status}</span>
-              <span>${date}</span>
-            `;
-            requestsList.appendChild(li);
-          });
+      try {
+        await db.collection("payoutRequests").add({
+          uid: user.uid,
+          email: user.email,
+          amount,
+          status: "Pending",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-    } else {
-      loginDiv.style.display = "block";
-      dashboardDiv.style.display = "none";
-      userEmailSpan.textContent = "";
-      balanceSpan.textContent = "0.00";
-      requestsList.innerHTML = "";
-    }
-  });
 
-  requestPayoutBtn.addEventListener("click", async () => {
-    const amount = parseFloat(payoutAmountInput.value);
-    if (!amount || amount <= 0) {
-      alert("Please enter a valid amount greater than 0.");
-      return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) {
-      alert("You must be signed in.");
-      return;
-    }
-
-    try {
-      await db.collection("payoutRequests").add({
-        uid: user.uid,
-        email: user.email,
-        amount,
-        status: "Pending",
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      alert("Payout request submitted.");
-      payoutAmountInput.value = "";
-    } catch (e) {
-      alert("Error submitting request: " + e.message);
-    }
-  });
-</script>
-
+        alert("Withdrawal request submitted!");
+        payoutAmountInput.value = "";
+      } catch (e) {
+        alert("Error submitting request: " + e.message);
+      }
+    };
+  </script>
 </body>
 </html>
