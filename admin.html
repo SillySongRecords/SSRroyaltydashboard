@@ -257,19 +257,11 @@
         tx.update(userRef, { balance: newBalance });
 
         const admin = auth.currentUser.email;
-        await db.collection("adminTransactions").add({
+        db.collection("adminTransactions").add({
           admin,
           user: email,
           amount,
           newBalance,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        await db.collection("payoutRequests").add({
-          email,
-          uid,
-          amount,
-          status: "Admin Adjusted",
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
       });
@@ -283,7 +275,104 @@
     }
   }
 
-  // ... rest of the existing code unchanged ...
+  function loadRequests() {
+    db.collection("payoutRequests")
+      .orderBy("timestamp", "desc")
+      .onSnapshot(snapshot => {
+        requestList.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : "";
+          const status = data.status || "Pending";
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td><input type="checkbox" class="selectCheckbox" data-id="${doc.id}"></td>
+            <td>${data.email}</td>
+            <td>${data.amount.toFixed(2)}</td>
+            <td><span class="status ${status}">${status}</span></td>
+            <td>${date}</td>
+            <td>
+              <button onclick="updateStatus('${doc.id}', 'Accepted', ${data.amount}, '${data.uid}')">Approve</button>
+              <button class="danger" onclick="updateStatus('${doc.id}', 'Rejected', 0, '${data.uid}')">Reject</button>
+              <button class="danger" onclick="deleteRequest('${doc.id}')">Delete</button>
+            </td>
+          `;
+          requestList.appendChild(tr);
+        });
+        updateDeleteSelectedVisibility();
+      });
+  }
+
+  function updateStatus(docId, status, amount, uid) {
+    const docRef = db.collection("payoutRequests").doc(docId);
+    docRef.update({ status });
+
+    if (status === "Accepted") {
+      const userRef = db.collection("users").doc(uid);
+      db.runTransaction(async tx => {
+        const userDoc = await tx.get(userRef);
+        if (userDoc.exists) {
+          const current = userDoc.data().balance || 0;
+          const newBalance = current - amount;
+          if (newBalance >= 0) {
+            tx.update(userRef, { balance: newBalance });
+          }
+        }
+      });
+    }
+  }
+
+  function deleteRequest(docId) {
+    if (confirm("Are you sure you want to delete this payout request?")) {
+      db.collection("payoutRequests").doc(docId).delete();
+    }
+  }
+
+  // Select all checkbox behavior
+  selectAllCheckbox.addEventListener('change', () => {
+    const checkboxes = document.querySelectorAll('.selectCheckbox');
+    checkboxes.forEach(cb => {
+      cb.checked = selectAllCheckbox.checked;
+    });
+    updateDeleteSelectedVisibility();
+  });
+
+  // Listen for individual checkbox changes to update selectAll state & button visibility
+  document.addEventListener('change', e => {
+    if (e.target.classList.contains('selectCheckbox')) {
+      const allCheckboxes = document.querySelectorAll('.selectCheckbox');
+      const checkedCheckboxes = document.querySelectorAll('.selectCheckbox:checked');
+      selectAllCheckbox.checked = allCheckboxes.length === checkedCheckboxes.length;
+      updateDeleteSelectedVisibility();
+    }
+  });
+
+  // Show or hide the Delete Selected button
+  function updateDeleteSelectedVisibility() {
+    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
+    deleteSelectedBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+  }
+
+  // Bulk delete selected payout requests
+  deleteSelectedBtn.addEventListener('click', () => {
+    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
+    if (checkedBoxes.length === 0) return;
+
+    if (!confirm(`Delete ${checkedBoxes.length} selected payout request(s)?`)) return;
+
+    const batch = db.batch();
+    checkedBoxes.forEach(cb => {
+      const docId = cb.getAttribute('data-id');
+      const docRef = db.collection("payoutRequests").doc(docId);
+      batch.delete(docRef);
+    });
+    batch.commit().then(() => {
+      alert("Selected payout requests deleted.");
+    }).catch(err => {
+      alert("Error deleting requests: " + err);
+    });
+  });
 </script>
 
 </body>
