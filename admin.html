@@ -97,30 +97,18 @@
       border-radius: 6px;
       display: inline-block;
     }
-    .Pending {
-      background-color: #0a64c8;
-    }
-    .Accepted {
-      background-color: #22c55e;
-    }
-    .Rejected {
-      background-color: #ef4444;
-    }
-    .error {
-      color: red;
-    }
-    .success {
-      color: green;
-    }
+    .Pending { background-color: #0a64c8; }
+    .Accepted { background-color: #22c55e; }
+    .Rejected { background-color: #ef4444; }
+    .error { color: red; }
+    .success { color: green; }
   </style>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
 <main>
   <header>
     <h1>Silly Song Records</h1>
@@ -138,12 +126,7 @@
     <h2>User Balances</h2>
     <table id="userTable">
       <thead>
-        <tr>
-          <th>Email</th>
-          <th>Balance ($)</th>
-          <th>Adjust</th>
-          <th>Action</th>
-        </tr>
+        <tr><th>Email</th><th>Balance ($)</th><th>Adjust</th><th>Action</th></tr>
       </thead>
       <tbody id="userList"></tbody>
     </table>
@@ -152,7 +135,7 @@
     <table>
       <thead>
         <tr>
-          <th><input type="checkbox" id="selectAll" title="Select/Deselect All"></th>
+          <th><input type="checkbox" id="selectAll"></th>
           <th>User Email</th>
           <th>Amount ($)</th>
           <th>Status</th>
@@ -169,15 +152,7 @@
 </main>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
-    authDomain: "musicroyaltydashboard.firebaseapp.com",
-    projectId: "musicroyaltydashboard",
-    storageBucket: "musicroyaltydashboard.appspot.com",
-    messagingSenderId: "11241137292",
-    appId: "1:11241137292:web:06a7d43d5b555f417087a9"
-  };
-
+  const firebaseConfig = { apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ", authDomain: "musicroyaltydashboard.firebaseapp.com", projectId: "musicroyaltydashboard", storageBucket: "musicroyaltydashboard.appspot.com", messagingSenderId: "11241137292", appId: "1:11241137292:web:06a7d43d5b555f417087a9" };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
@@ -191,15 +166,10 @@
   const userList = document.getElementById("userList");
   const requestList = document.getElementById("requestList");
   const statusMsg = document.getElementById("statusMsg");
-
   const selectAllCheckbox = document.getElementById("selectAll");
   const deleteSelectedBtn = document.getElementById("deleteSelectedBtn");
 
-  loginBtn.onclick = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider);
-  };
-
+  loginBtn.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
   logoutBtn.onclick = () => auth.signOut();
 
   auth.onAuthStateChanged(user => {
@@ -220,15 +190,13 @@
       userList.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-        const row = document.createElement("tr");
-
-        const emailCell = `<td>${data.email}</td>`;
-        const balanceCell = `<td>${(data.balance || 0).toFixed(2)}</td>`;
-        const inputCell = `<td><input type="number" id="input-${doc.id}" placeholder="e.g. 10 or -5" step="0.01" /></td>`;
-        const actionCell = `<td><button onclick="adjustBalance('${doc.id}', '${data.email}')">Apply</button></td>`;
-
-        row.innerHTML = emailCell + balanceCell + inputCell + actionCell;
-        userList.appendChild(row);
+        userList.innerHTML += `
+          <tr>
+            <td>${data.email}</td>
+            <td>${(data.balance || 0).toFixed(2)}</td>
+            <td><input type="number" id="input-${doc.id}" placeholder="e.g. 10 or -5" step="0.01"></td>
+            <td><button onclick="adjustBalance('${doc.id}', '${data.email}')">Apply</button></td>
+          </tr>`;
       });
     });
   }
@@ -236,144 +204,103 @@
   async function adjustBalance(uid, email) {
     const input = document.getElementById("input-" + uid);
     const amount = parseFloat(input.value);
-    statusMsg.textContent = "";
-    statusMsg.className = "status";
-
-    if (isNaN(amount)) {
-      statusMsg.textContent = "Invalid amount.";
-      statusMsg.classList.add("error");
-      return;
-    }
-
+    if (isNaN(amount)) return statusMsg.textContent = "Invalid amount.";
     try {
       await db.runTransaction(async tx => {
-        const userRef = db.collection("users").doc(uid);
-        const userDoc = await tx.get(userRef);
-        if (!userDoc.exists) throw "User not found.";
-        const current = userDoc.data().balance || 0;
-        const newBalance = current + amount;
-        if (newBalance < 0) throw "Cannot go below $0.";
-
-        tx.update(userRef, { balance: newBalance });
-
-        const admin = auth.currentUser.email;
-        db.collection("adminTransactions").add({
-          admin,
-          user: email,
-          amount,
-          newBalance,
+        const ref = db.collection("users").doc(uid);
+        const snap = await tx.get(ref);
+        const current = snap.data().balance || 0;
+        const newBal = current + amount;
+        if (newBal < 0) throw "Insufficient funds.";
+        tx.update(ref, { balance: newBal });
+        await db.collection("adminTransactions").add({
+          admin: auth.currentUser.email, user: email, amount, newBalance: newBal,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
       });
-
       statusMsg.textContent = "Balance updated.";
-      statusMsg.classList.add("success");
       input.value = "";
-    } catch (e) {
-      statusMsg.textContent = "Error: " + e;
-      statusMsg.classList.add("error");
-    }
+    } catch (e) { statusMsg.textContent = "Error: " + e; }
   }
 
   function loadRequests() {
-    db.collection("payoutRequests")
-      .orderBy("timestamp", "desc")
-      .onSnapshot(snapshot => {
-        requestList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : "";
-          const status = data.status || "Pending";
-          const tr = document.createElement("tr");
-
-          tr.innerHTML = `
+    db.collection("payoutRequests").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+      requestList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : "";
+        const status = data.status || "Pending";
+        requestList.innerHTML += `
+          <tr>
             <td><input type="checkbox" class="selectCheckbox" data-id="${doc.id}"></td>
             <td>${data.email}</td>
             <td>${data.amount.toFixed(2)}</td>
             <td><span class="status ${status}">${status}</span></td>
             <td>${date}</td>
             <td>
-              <button onclick="updateStatus('${doc.id}', 'Accepted', ${data.amount}, '${data.uid}')">Approve</button>
-              <button class="danger" onclick="updateStatus('${doc.id}', 'Rejected', 0, '${data.uid}')">Reject</button>
+              ${status === "Pending" ? `
+                <button onclick="updateStatus('${doc.id}', 'Accepted', ${data.amount}, '${data.uid}', this)">Approve</button>
+                <button class="danger" onclick="updateStatus('${doc.id}', 'Rejected', 0, '${data.uid}', this)">Reject</button>
+              ` : `
+                <button disabled>Approve</button>
+                <button class="danger" disabled>Reject</button>
+              `}
               <button class="danger" onclick="deleteRequest('${doc.id}')">Delete</button>
             </td>
-          `;
-          requestList.appendChild(tr);
-        });
-        updateDeleteSelectedVisibility();
+          </tr>`;
       });
-  }
-
-  function updateStatus(docId, status, amount, uid) {
-    const docRef = db.collection("payoutRequests").doc(docId);
-    docRef.update({ status });
-
-    if (status === "Accepted") {
-      const userRef = db.collection("users").doc(uid);
-      db.runTransaction(async tx => {
-        const userDoc = await tx.get(userRef);
-        if (userDoc.exists) {
-          const current = userDoc.data().balance || 0;
-          const newBalance = current - amount;
-          if (newBalance >= 0) {
-            tx.update(userRef, { balance: newBalance });
-          }
-        }
-      });
-    }
-  }
-
-  function deleteRequest(docId) {
-    if (confirm("Are you sure you want to delete this payout request?")) {
-      db.collection("payoutRequests").doc(docId).delete();
-    }
-  }
-
-  // Select all checkbox behavior
-  selectAllCheckbox.addEventListener('change', () => {
-    const checkboxes = document.querySelectorAll('.selectCheckbox');
-    checkboxes.forEach(cb => {
-      cb.checked = selectAllCheckbox.checked;
+      updateDeleteSelectedVisibility();
     });
+  }
+
+  function updateStatus(docId, status, amount, uid, btn) {
+    db.collection("payoutRequests").doc(docId).update({ status });
+    btn.parentElement.querySelectorAll("button").forEach(b => b.disabled = true);
+    if (status === "Accepted") {
+      const ref = db.collection("users").doc(uid);
+      db.runTransaction(async tx => {
+        const doc = await tx.get(ref);
+        const bal = doc.data().balance || 0;
+        const newBal = bal - amount;
+        if (newBal >= 0) tx.update(ref, { balance: newBal });
+      });
+    }
+  }
+
+  function deleteRequest(id) {
+    if (confirm("Delete this payout request?")) {
+      db.collection("payoutRequests").doc(id).delete();
+    }
+  }
+
+  selectAllCheckbox.addEventListener('change', () => {
+    document.querySelectorAll('.selectCheckbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
     updateDeleteSelectedVisibility();
   });
 
-  // Listen for individual checkbox changes to update selectAll state & button visibility
   document.addEventListener('change', e => {
     if (e.target.classList.contains('selectCheckbox')) {
-      const allCheckboxes = document.querySelectorAll('.selectCheckbox');
-      const checkedCheckboxes = document.querySelectorAll('.selectCheckbox:checked');
-      selectAllCheckbox.checked = allCheckboxes.length === checkedCheckboxes.length;
+      const all = document.querySelectorAll('.selectCheckbox');
+      const checked = document.querySelectorAll('.selectCheckbox:checked');
+      selectAllCheckbox.checked = all.length === checked.length;
       updateDeleteSelectedVisibility();
     }
   });
 
-  // Show or hide the Delete Selected button
   function updateDeleteSelectedVisibility() {
-    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
-    deleteSelectedBtn.style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
+    deleteSelectedBtn.style.display = document.querySelectorAll('.selectCheckbox:checked').length > 0 ? 'inline-block' : 'none';
   }
 
-  // Bulk delete selected payout requests
   deleteSelectedBtn.addEventListener('click', () => {
-    const checkedBoxes = document.querySelectorAll('.selectCheckbox:checked');
-    if (checkedBoxes.length === 0) return;
-
-    if (!confirm(`Delete ${checkedBoxes.length} selected payout request(s)?`)) return;
-
+    const checked = document.querySelectorAll('.selectCheckbox:checked');
+    if (!confirm(`Delete ${checked.length} selected payout(s)?`)) return;
     const batch = db.batch();
-    checkedBoxes.forEach(cb => {
-      const docId = cb.getAttribute('data-id');
-      const docRef = db.collection("payoutRequests").doc(docId);
-      batch.delete(docRef);
+    checked.forEach(cb => {
+      const id = cb.getAttribute('data-id');
+      batch.delete(db.collection("payoutRequests").doc(id));
     });
-    batch.commit().then(() => {
-      alert("Selected payout requests deleted.");
-    }).catch(err => {
-      alert("Error deleting requests: " + err);
-    });
+    batch.commit().then(() => alert("Deleted successfully.")).catch(e => alert("Error: " + e));
   });
 </script>
-
 </body>
 </html>
