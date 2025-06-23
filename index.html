@@ -129,6 +129,8 @@
       font-size: 0.85rem;
       text-transform: uppercase;
       color: white;
+      min-width: 75px;
+      text-align: center;
     }
     .status.Pending {
       background-color: #0a64c8;
@@ -168,10 +170,10 @@
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
       <br />
-      <button id="adminLoginBtn">Admin Login</button>
+      <button id="adminLoginBtn" style="margin-top: 1em;">Admin Login</button>
     </div>
 
-    <div id="dashboard">
+    <div id="dashboard" style="display:none;">
       <p><strong>Logged in as:</strong> <span id="userEmail"></span></p>
       <p><strong>Balance:</strong> $<span id="balance">0.00</span></p>
 
@@ -191,7 +193,6 @@
   </footer>
 
 <script>
-  // ===== Your Firebase config here =====
   const firebaseConfig = {
     apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
     authDomain: "musicroyaltydashboard.firebaseapp.com",
@@ -217,9 +218,6 @@
   const requestPayoutBtn = document.getElementById("requestPayoutBtn");
   const requestsList = document.getElementById("requestsList");
 
-  loginDiv.style.display = "block";
-  dashboardDiv.style.display = "none";
-
   loginBtn.addEventListener("click", () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(error => {
@@ -229,7 +227,6 @@
   });
 
   adminLoginBtn.addEventListener("click", () => {
-    // Navigate to your admin login page
     window.location.href = "admin.html";
   });
 
@@ -255,7 +252,6 @@
         balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
       });
 
-      // Load user's past payout requests
       db.collection("payoutRequests")
         .where("uid", "==", user.uid)
         .orderBy("timestamp", "desc")
