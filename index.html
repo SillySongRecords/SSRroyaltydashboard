@@ -74,6 +74,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s ease;
+      margin-top: 0.5em;
     }
     button:hover {
       background-color: #084ea4;
@@ -166,9 +167,11 @@
 
     <div id="login">
       <button id="loginBtn">Sign in with Google</button>
+      <br />
+      <button id="adminLoginBtn">Admin Login</button>
     </div>
 
-    <div id="dashboard" style="display:none;">
+    <div id="dashboard">
       <p><strong>Logged in as:</strong> <span id="userEmail"></span></p>
       <p><strong>Balance:</strong> $<span id="balance">0.00</span></p>
 
@@ -188,6 +191,7 @@
   </footer>
 
 <script>
+  // ===== Your Firebase config here =====
   const firebaseConfig = {
     apiKey: "AIzaSyCS-ykifZL2-fhDVuI13t8WYV3a0ZYEfTQ",
     authDomain: "musicroyaltydashboard.firebaseapp.com",
@@ -205,6 +209,7 @@
   const loginDiv = document.getElementById("login");
   const dashboardDiv = document.getElementById("dashboard");
   const loginBtn = document.getElementById("loginBtn");
+  const adminLoginBtn = document.getElementById("adminLoginBtn");
   const signOutBtn = document.getElementById("signOutBtn");
   const userEmailSpan = document.getElementById("userEmail");
   const balanceSpan = document.getElementById("balance");
@@ -212,12 +217,20 @@
   const requestPayoutBtn = document.getElementById("requestPayoutBtn");
   const requestsList = document.getElementById("requestsList");
 
+  loginDiv.style.display = "block";
+  dashboardDiv.style.display = "none";
+
   loginBtn.addEventListener("click", () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).catch(error => {
       alert("Sign in failed: " + error.message);
       console.error("Sign in error:", error);
     });
+  });
+
+  adminLoginBtn.addEventListener("click", () => {
+    // Navigate to your admin login page
+    window.location.href = "admin.html";
   });
 
   signOutBtn.addEventListener("click", () => {
@@ -242,18 +255,12 @@
         balanceSpan.textContent = data.balance?.toFixed(2) || "0.00";
       });
 
-      // Load user's past payout requests with statuses & dates
+      // Load user's past payout requests
       db.collection("payoutRequests")
         .where("uid", "==", user.uid)
         .orderBy("timestamp", "desc")
         .onSnapshot(snapshot => {
           requestsList.innerHTML = "";
-          if (snapshot.empty) {
-            const li = document.createElement("li");
-            li.textContent = "No payout requests found.";
-            requestsList.appendChild(li);
-            return;
-          }
           snapshot.forEach(doc => {
             const req = doc.data();
             const amount = req.amount.toFixed(2);
